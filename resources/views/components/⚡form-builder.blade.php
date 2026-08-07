@@ -109,110 +109,110 @@ new class extends Component
     @foreach($sections ?? [] as $section)
 
 
-        <div class="card mb-3">
+    <div class="card mb-3">
 
 
-            <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card-header d-flex justify-content-between align-items-center">
 
 
-                <strong>
-                    {{ $section['title'] }}
-                </strong>
-
-
-
-                <button
-                    class="btn btn-danger btn-sm"
-                    wire:click="removeSection('{{ $section['id'] }}')">
-
-                    Delete Section
-
-                </button>
-
-
-            </div>
+            <strong>
+                {{ $section['title'] }}
+            </strong>
 
 
 
+            <button
+                class="btn btn-danger btn-sm"
+                wire:click="removeSection('{{ $section['id'] }}')">
 
-            <div class="card-body">
+                Delete Section
+
+            </button>
 
 
-                <button
-                    class="btn btn-success btn-sm mb-3"
-                    wire:click="addField('{{ $section['id'] }}')">
-
-                    + Add Field
-
-                </button>
+        </div>
 
 
 
 
-                @forelse($section['fields'] ?? [] as $field)
+        <div class="card-body">
 
 
-                    <div class="border rounded p-3 mb-2">
+            <button
+                class="btn btn-success btn-sm mb-3"
+                wire:click="addField('{{ $section['id'] }}')">
 
+                + Add Field
 
-                        <div class="d-flex justify-content-between align-items-center">
-
-
-                            <div>
-
-
-                                <strong>
-                                    {{ $field['label'] }}
-                                </strong>
-
-
-
-                                <span class="badge bg-secondary ms-2">
-
-                                    {{ $field['type'] }}
-
-                                </span>
-
-
-                            </div>
+            </button>
 
 
 
 
-                            <button
-                                class="btn btn-danger btn-sm"
-                                wire:click="removeField('{{ $section['id'] }}','{{ $field['id'] }}')">
-
-                                Delete Field
-
-                            </button>
+            @forelse($section['fields'] ?? [] as $field)
 
 
+            <div class="border rounded p-3 mb-2">
 
-                        </div>
 
+                <div class="d-flex justify-content-between align-items-center">
+
+
+                    <div>
+
+
+                        <strong>
+                            {{ $field['label'] }}
+                        </strong>
+
+
+
+                        <span class="badge bg-secondary ms-2">
+
+                            {{ $field['type'] }}
+
+                        </span>
 
 
                     </div>
 
 
 
-                @empty
+
+                    <button
+                        class="btn btn-danger btn-sm"
+                        wire:click="removeField('{{ $section['id'] }}','{{ $field['id'] }}')">
+
+                        Delete Field
+
+                    </button>
 
 
-                    <p class="text-muted">
-                        No fields added yet
-                    </p>
 
-
-                @endforelse
+                </div>
 
 
 
             </div>
 
 
+
+            @empty
+
+
+            <p class="text-muted">
+                No fields added yet
+            </p>
+
+
+            @endforelse
+
+
+
         </div>
+
+
+    </div>
 
 
 

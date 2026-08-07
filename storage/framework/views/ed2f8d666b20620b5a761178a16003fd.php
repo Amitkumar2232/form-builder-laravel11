@@ -210,7 +210,7 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
             </div>
 
             
-            <div class="w-72 bg-white border rounded-xl p-4 h-fit sticky top-4">
+            <div x-data @click.away="$wire.set('selectedFieldId', null)" class="w-72 bg-white border rounded-xl p-4 h-fit sticky top-4">
                 <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($selectedField): ?>
                     <h3 class="font-semibold text-gray-800 mb-3">Field options</h3>
                     <div class="space-y-3 text-sm">
