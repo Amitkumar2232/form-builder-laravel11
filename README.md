@@ -1,66 +1,161 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# AI-Powered Form Builder
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel 11 + Livewire 4 form builder with manual creation, AI generation, Word/Excel import, public fill URLs, and submission management.
 
-## About Laravel
+## Requirements
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- PHP 8.2+
+- MySQL 8+ (recommended) or SQLite for local dev
+- Composer
+- Node.js (optional, for Vite assets)
+- Queue worker for AI/import jobs (`php artisan queue:work`)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Quick Start
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
 
-## Learning Laravel
+# Configure MySQL in .env:
+# DB_CONNECTION=mysql
+# DB_HOST=127.0.0.1
+# DB_DATABASE=form_builder
+# DB_USERNAME=root
+# DB_PASSWORD=
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+php artisan migrate
+php artisan db:seed
+php artisan storage:link
+php artisan forms:generate-samples
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+# Optional: set OPENAI_API_KEY in .env for real AI generation
+# Without it, a deterministic mock generator is used
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+php artisan serve
+php artisan queue:work   # separate terminal
+```
 
-## Laravel Sponsors
+Visit `http://localhost:8000/forms`
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Features
 
-### Premium Partners
+### Part A — Core Form Builder
+- 4-step wizard: Details → Builder → Settings → Finish
+- 15 field types: text, textarea, number, email, phone, date, dropdown, radio, checkbox, file, rating, hidden, heading, description, newline
+- Drag-and-drop reorder (SortableJS), click-to-add, duplicate, inline edit, delete
+- Per-field config: label, key, placeholder, help text, default, required, options, validation rules
+- JSON schema as single source of truth with two-way sync editor
+- Server-side validation derived from schema on public submit
+- Submissions list with pagination, search, CSV export
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+### Part B — AI Form Generation
+- Natural-language prompt → complete editable form
+- Edit existing forms via AI ("add emergency contact", "make phone required")
+- Queued job with polling status UI
+- Logs model, tokens, latency to `ai_generation_logs`
+- Validates/repairs JSON; never persists broken schema
+- Mock fallback when `OPENAI_API_KEY` is unset
 
-## Contributing
+### Part C — Word & Excel Import
+- **Word (.docx)**: headings → sections, numbered questions → fields, bracket lists → options
+- **Excel (.xlsx)**: two layouts supported:
+  1. Header row (row 1 = labels, optional row 2 = types)
+  2. Field definition sheet (columns: label, type, required, options, placeholder)
+- Deterministic parsing first; preview before commit
+- Queued processing for large files
+- Sample files in `samples/` (run `php artisan forms:generate-samples`)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Part D — Differentiators
 
-## Code of Conduct
+#### 1. Form Versioning & Rollback
+- **Problem**: Accidental schema changes lose previous work
+- **Implementation**: Every save snapshots to `form_versions`; rollback from Settings step
+- **Trade-offs**: Storage grows with edits; no diff view yet
+- **More time**: Visual diff, named checkpoints, auto-prune old versions
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+#### 2. Conditional Logic
+- **Problem**: Forms need fields that appear based on prior answers
+- **Implementation**: `conditions.show_when` on fields; evaluated server-side on submit
+- **Trade-offs**: UI is basic (field key + operator); no nested AND/OR groups
+- **More time**: Visual rule builder, client-side live show/hide
 
-## Security Vulnerabilities
+#### 3. Template Library
+- **Problem**: Users rebuild common forms from scratch
+- **Implementation**: Seeded templates (Contact, Job Application, Event Registration); start new form from template
+- **Trade-offs**: Templates are admin-seeded, not user-created yet
+- **More time**: User-save-as-template, categories, preview thumbnails
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+#### Bonus: Embeddable Widget + Rate Limiting
+- `/embed/{slug}` iframe embed for published forms
+- Rate limit: 5 submissions/minute per IP per form
+
+## MySQL Indexes
+
+| Table | Index | Purpose |
+|-------|-------|---------|
+| `forms` | `uuid` UNIQUE | Public API lookups |
+| `forms` | `slug` UNIQUE | Public fill URL routing |
+| `forms` | `status` | Filter published/draft lists |
+| `forms` | `(status, created_at)` | Dashboard listing at scale |
+| `forms` | `title` | Search |
+| `forms` | `is_template` | Template library queries |
+| `form_submissions` | `(form_id, submitted_at)` | Paginated submission lists |
+| `form_submissions` | `(form_id, created_at)` | Export and analytics |
+| `form_versions` | `(form_id, version_number)` UNIQUE | Rollback lookups |
+| `ai_generation_logs` | `(status, created_at)` | Job monitoring |
+| `form_imports` | `(status, created_at)` | Import queue monitoring |
+
+## AI Prompt Strategy
+
+See [docs/AI_PROMPT_STRATEGY.md](docs/AI_PROMPT_STRATEGY.md)
+
+## JSON Schema Contract
+
+```json
+{
+  "version": 1,
+  "title": "Form Title",
+  "sections": [{
+    "id": "uuid",
+    "title": "Section",
+    "fields": [{
+      "id": "uuid",
+      "type": "text",
+      "key": "field_key",
+      "label": "Label",
+      "required": false,
+      "validation": { "min_length": null, "max_length": null }
+    }]
+  }],
+  "settings": {
+    "submit_button_text": "Submit",
+    "success_message": "Thank you!",
+    "allow_multiple_submissions": true
+  }
+}
+```
+
+## Routes
+
+| Method | URI | Description |
+|--------|-----|-------------|
+| GET | `/forms` | List forms & templates |
+| GET | `/forms/create` | New form wizard |
+| GET | `/forms/{form}/edit` | Edit form |
+| GET | `/submit/{slug}` | Public fill URL |
+| GET | `/embed/{slug}` | Embeddable iframe |
+| GET | `/forms/{form}/submissions` | View submissions |
+| GET | `/forms/{form}/submissions/export` | CSV export |
+
+## Testing Import Samples
+
+```bash
+php artisan forms:generate-samples
+# Upload samples/sample-survey.docx or samples/sample-field-definition.xlsx
+# via the import panel on Step 1 (Details)
+```
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT
